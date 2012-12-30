@@ -1,0 +1,12 @@
+#!/bin/sh
+
+FILES=$(git diff --cached --name-status | grep -v ^D | awk '$1 $2 { print $2}' | grep -e .py$)
+if [ -n "$FILES" ]; then
+    pep8 -r $FILES > /dev/null 2>&1
+    pylint $FILES > /dev/null 2>&1
+
+    if [ $? != 0 ]; then
+        echo "ERROR: Some modified files didn't pass pep8 and pylint checks. Commit aborted!"
+        exit 1
+    fi
+fi
