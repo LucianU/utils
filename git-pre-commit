@@ -1,9 +1,18 @@
 #!/bin/sh
 
+# Getting the new or modified files. We first assume that git is used
 FILES=$(git diff --cached --name-status | grep -v ^D | awk '$1 $2 { print $2}' | grep -e .py$)
+
+# If $FILES is not set, we also try hg, in case it's a mercurial repo
+if [-z "$FILES" ]; then
+    FILES=$(hg status --all | grep -E '^A|^M' | awk '{ print $2 }' | grep -e .py$)
+fi
+
+# Finally, if $FILES is set, we run pep8 and pylint on the files
 if [ -n "$FILES" ]; then
-    pep8 -r $FILES > /dev/null 2>&1
-    pylint $FILES > /dev/null 2>&1
+    PROJECT_ROOT = $(pwd | xargs dirname | xargs dirname)
+    pep8 -r --config=PROJECT_ROOT/.pep8rc $FILES > /dev/null 2>&1
+    pylint --rcfile=PROJECT_ROOT/.pylint $FILES > /dev/null 2>&1
 
     if [ $? != 0 ]; then
         echo "ERROR: Some modified files didn't pass pep8 and pylint checks. Commit aborted!"
